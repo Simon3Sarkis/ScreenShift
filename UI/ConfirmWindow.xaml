@@ -1,0 +1,32 @@
+<Window x:Class="ScreenShift.UI.ConfirmWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Keep display settings?" WindowStyle="None" ResizeMode="NoResize"
+        SizeToContent="WidthAndHeight" ShowInTaskbar="False" Topmost="True">
+    <Border BorderThickness="1" BorderBrush="{DynamicResource SurfaceStrokeColorFlyoutBrush}"
+            Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
+        <StackPanel Width="420">
+            <StackPanel Margin="24,22,24,22">
+                <TextBlock Text="Keep these display settings?" FontSize="20" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                <TextBlock x:Name="Body" Margin="0,12,0,0" TextWrapping="Wrap" FontSize="14"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                <TextBlock x:Name="Countdown" Margin="0,8,0,0" FontSize="12"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
+            <Border Background="{DynamicResource SolidBackgroundFillColorTertiaryBrush}" Padding="24,20"
+                    BorderThickness="0,1,0,0" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition Width="8" />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="KeepBtn" Content="Keep changes" IsDefault="True" Height="32"
+                            HorizontalAlignment="Stretch" Style="{DynamicResource AccentButtonStyle}" Click="Keep_Click" />
+                    <Button Grid.Column="2" Content="Revert" IsCancel="True" Height="32" HorizontalAlignment="Stretch" Click="Revert_Click" />
+                </Grid>
+            </Border>
+        </StackPanel>
+    </Border>
+</Window>

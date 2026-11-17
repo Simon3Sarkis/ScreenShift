@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>ScreenShift</RootNamespace>
+    <AssemblyName>ScreenShift</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+
+    <!-- File metadata (honest metadata helps SmartScreen / AV reputation) -->
+    <Product>ScreenShift</Product>
+    <Title>ScreenShift</Title>
+    <Description>Monitor profile switcher with DPI-aware cursor alignment</Description>
+    <Company>ScreenShift</Company>
+    <Copyright>Copyright © 2026</Copyright>
+    <Version>1.0.0</Version>
+    <FileVersion>1.0.0.0</FileVersion>
+
+    <!-- WPF Fluent (Windows 11) theme is flagged experimental -->
+    <NoWarn>$(NoWarn);WPF0001</NoWarn>
+
+    <!-- Lean runtime: small heap, no background GC thread -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <TieredPGO>true</TieredPGO>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Tray icon, loaded at runtime from next to the exe -->
+    <Content Include="Assets\app.ico" Link="app.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,286 @@
+<Window x:Class="ScreenShift.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:ScreenShift.UI"
+        Title="ScreenShift" Width="1000" Height="720" MinWidth="780" MinHeight="520"
+        WindowStartupLocation="CenterScreen">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250" />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+
+        <!-- Navigation -->
+        <DockPanel Margin="8,8,4,12">
+            <ListBox Margin="0,8,0,0" x:Name="Nav" Background="Transparent" BorderThickness="0" SelectedIndex="0"
+                     ItemContainerStyle="{StaticResource NavItem}" SelectionChanged="Nav_SelectionChanged"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE7F4;" FontFamily="{StaticResource IconFont}" FontSize="16" VerticalAlignment="Center" />
+                    <TextBlock Text="Display profiles" Margin="14,0,0,0" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE962;" FontFamily="{StaticResource IconFont}" FontSize="16" VerticalAlignment="Center" />
+                    <TextBlock Text="Cursor alignment" Margin="14,0,0,0" VerticalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE713;" FontFamily="{StaticResource IconFont}" FontSize="16" VerticalAlignment="Center" />
+                    <TextBlock Text="Settings" Margin="14,0,0,0" VerticalAlignment="Center" />
+                </StackPanel>
+            </ListBox>
+        </DockPanel>
+
+        <!-- Content -->
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Padding="28,14,36,28">
+            <Grid MaxWidth="1000" HorizontalAlignment="Stretch">
+
+                <!-- ============ PROFILES ============ -->
+                <StackPanel x:Name="PageProfiles">
+                    <TextBlock Text="Display profiles" FontSize="28" FontWeight="SemiBold" Margin="0,0,0,14"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+
+                    <Border Style="{StaticResource Card}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource CardIcon}" Text="&#xE7F8;" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Style="{StaticResource CardTitle}" Text="Current layout" />
+                                <TextBlock x:Name="CurrentSummary" Style="{StaticResource CardDesc}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBox x:Name="NewName" Width="180" VerticalAlignment="Center" KeyDown="NewName_KeyDown"
+                                         ToolTip="Name for the new profile" />
+                                <Button Content="Save as profile" Margin="8,0,0,0" MinWidth="120" Height="32"
+                                        Style="{DynamicResource AccentButtonStyle}" Click="SaveNew_Click" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <TextBlock Style="{StaticResource SectionHeader}" Text="Saved profiles" />
+                    <StackPanel x:Name="ProfileList" />
+                    <Border x:Name="EmptyState" Style="{StaticResource Card}" Visibility="Collapsed">
+                        <TextBlock Style="{StaticResource CardDesc}" VerticalAlignment="Center" FontSize="13"
+                                   Text="No profiles yet. Arrange your displays in Windows Settings (resolution, refresh rate, HDR, which screens are on), then press 'Save as profile'. Repeat for each setup, then give each profile a shortcut." />
+                    </Border>
+
+                    <TextBlock Style="{StaticResource SectionHeader}" Text="Shortcuts" />
+                    <Border Style="{StaticResource Card}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource CardIcon}" Text="&#xE8EE;" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Style="{StaticResource CardTitle}" Text="Cycle through profiles" />
+                                <TextBlock Style="{StaticResource CardDesc}" Text="One shortcut that jumps to the next profile. Handy with two setups (e.g. desk and OLED gaming)." />
+                            </StackPanel>
+                            <ui:HotkeyBox x:Name="CycleKey" Grid.Column="2" />
+                        </Grid>
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource CardIcon}" Text="&#xE7BA;" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Style="{StaticResource CardTitle}" Text="Emergency: turn on all displays" />
+                                <TextBlock Style="{StaticResource CardDesc}" Text="If a screen ever stays black, this extends the desktop to every connected display using Windows' last working modes." />
+                            </StackPanel>
+                            <ui:HotkeyBox x:Name="EmergencyKey" Grid.Column="2" />
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
+                <!-- ============ CURSOR ============ -->
+                <StackPanel x:Name="PageCursor" Visibility="Collapsed">
+                    <TextBlock Text="Cursor alignment" FontSize="28" FontWeight="SemiBold" Margin="0,0,0,14"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+
+                    <Border Style="{StaticResource Card}" Padding="16">
+                        <StackPanel>
+                            <Canvas x:Name="Diagram" Height="230" ClipToBounds="True" />
+                            <TextBlock x:Name="DiagramNote" Style="{StaticResource CardDesc}" Margin="0,10,0,0" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource CardIcon}" Text="&#xE962;" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Style="{StaticResource CardTitle}" Text="Seamless cursor movement" />
+                                <TextBlock Style="{StaticResource CardDesc}" Text="Moves the cursor to the matching spot on the next screen instead of the raw pixel row, so it never sticks at an edge or jumps when scaling differs." />
+                            </StackPanel>
+                            <CheckBox x:Name="BridgeToggle" Grid.Column="2" Style="{StaticResource ToggleSwitch}" Click="BridgeToggle_Click" />
+                        </Grid>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource CardIcon}" Text="&#xE8A9;" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Style="{StaticResource CardTitle}" Text="Alignment" />
+                                <TextBlock x:Name="ModeDesc" Style="{StaticResource CardDesc}" />
+                            </StackPanel>
+                            <ComboBox x:Name="ModeBox" Grid.Column="2" Width="270" VerticalAlignment="Center" SelectionChanged="ModeBox_SelectionChanged">
+                                <ComboBoxItem Content="Edge to edge (recommended)" />
+                                <ComboBoxItem Content="Match scaling, top aligned" />
+                                <ComboBoxItem Content="Match scaling, centered" />
+                                <ComboBoxItem Content="Match scaling, bottom aligned" />
+                            </ComboBox>
+                        </Grid>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource CardIcon}" Text="&#xE765;" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Style="{StaticResource CardTitle}" Text="Shortcut to turn alignment on or off" />
+                                <TextBlock Style="{StaticResource CardDesc}" Text="Games that lock the cursor are detected automatically, this is just in case." />
+                            </StackPanel>
+                            <ui:HotkeyBox x:Name="BridgeKey" Grid.Column="2" />
+                        </Grid>
+                    </Border>
+
+                    <TextBlock Style="{StaticResource CardDesc}" Margin="2,12,0,0"
+                               Text="Tip: in Windows Settings &gt; Display, line your screens up the way they sit on the desk. Windows blocks cursor tools while an app running as administrator is focused (Task Manager etc.), so the normal behaviour applies there." />
+                </StackPanel>
+
+                <!-- ============ SETTINGS ============ -->
+                <StackPanel x:Name="PageSettings" Visibility="Collapsed">
+                    <TextBlock Text="Settings" FontSize="28" FontWeight="SemiBold" Margin="0,0,0,14"
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+
+                    <TextBlock Style="{StaticResource SectionHeader}" Text="Switching" Margin="2,0,0,8" />
+                    <Border Style="{StaticResource Card}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource CardIcon}" Text="&#xE8FB;" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Style="{StaticResource CardTitle}" Text="Ask before keeping a new layout" />
+                                <TextBlock Style="{StaticResource CardDesc}" Text="Like Windows' own 'Keep changes?' prompt. If a screen comes up black, just wait and it reverts by itself. Press Enter to keep." />
+                            </StackPanel>
+                            <ComboBox x:Name="ConfirmSecs" Grid.Column="2" Width="90" Margin="0,0,16,0" VerticalAlignment="Center" SelectionChanged="Setting_Changed">
+                                <ComboBoxItem Content="8 s" Tag="8" />
+                                <ComboBoxItem Content="15 s" Tag="15" />
+                                <ComboBoxItem Content="30 s" Tag="30" />
+                            </ComboBox>
+                            <CheckBox x:Name="ConfirmToggle" Grid.Column="3" Style="{StaticResource ToggleSwitch}" Click="Setting_Changed" />
+                        </Grid>
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource CardIcon}" Text="&#xE7E7;" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Style="{StaticResource CardTitle}" Text="On-screen notifications" />
+                                <TextBlock Style="{StaticResource CardDesc}" Text="Shows a small banner when a profile is applied. Errors are always shown." />
+                            </StackPanel>
+                            <CheckBox x:Name="OsdToggle" Grid.Column="2" Style="{StaticResource ToggleSwitch}" Click="Setting_Changed" />
+                        </Grid>
+                    </Border>
+
+                    <TextBlock Style="{StaticResource SectionHeader}" Text="App" />
+                    <Border Style="{StaticResource Card}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource CardIcon}" Text="&#xE7E8;" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Style="{StaticResource CardTitle}" Text="Start with Windows" />
+                                <TextBlock Style="{StaticResource CardDesc}" Text="Starts quietly in the system tray when you sign in." />
+                            </StackPanel>
+                            <CheckBox x:Name="StartupToggle" Grid.Column="2" Style="{StaticResource ToggleSwitch}" Click="Startup_Click" />
+                        </Grid>
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource CardIcon}" Text="&#xE737;" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Style="{StaticResource CardTitle}" Text="Open in the tray" />
+                                <TextBlock Style="{StaticResource CardDesc}" Text="Skip this window on launch once you have profiles. Closing this window always keeps ScreenShift running in the tray." />
+                            </StackPanel>
+                            <CheckBox x:Name="TrayToggle" Grid.Column="2" Style="{StaticResource ToggleSwitch}" Click="Setting_Changed" />
+                        </Grid>
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource CardIcon}" Text="&#xE790;" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Style="{StaticResource CardTitle}" Text="App theme" />
+                            </StackPanel>
+                            <ComboBox x:Name="ThemeBox" Grid.Column="2" Width="200" VerticalAlignment="Center" SelectionChanged="Setting_Changed">
+                                <ComboBoxItem Content="Use system setting" Tag="System" />
+                                <ComboBoxItem Content="Light" Tag="Light" />
+                                <ComboBoxItem Content="Dark" Tag="Dark" />
+                            </ComboBox>
+                        </Grid>
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource CardIcon}" Text="&#xE946;" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Style="{StaticResource CardTitle}" Text="About ScreenShift" />
+                                <TextBlock x:Name="AboutText" Style="{StaticResource CardDesc}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                <Button Content="Open data folder" Height="32" Click="OpenFolder_Click" />
+                                <Button Content="Exit" Height="32" Margin="8,0,0,0" Click="Exit_Click" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</Window>
