@@ -19,8 +19,8 @@
     <Description>Monitor profile switcher with DPI-aware cursor alignment</Description>
     <Company>ScreenShift</Company>
     <Copyright>Copyright © 2026</Copyright>
-    <Version>1.0.1</Version>
-    <FileVersion>1.0.1.0</FileVersion>
+    <Version>1.0.2</Version>
+    <FileVersion>1.0.2.0</FileVersion>
 
     <!-- WPF Fluent (Windows 11) theme is flagged experimental -->
     <NoWarn>$(NoWarn);WPF0001</NoWarn>

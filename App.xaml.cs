@@ -29,6 +29,13 @@ public partial class App : Application
     {
         if (e.Args.Contains("--selftest")) { SelfTest.Run(); Shutdown(); return; }
         if (e.Args.Length >= 3 && e.Args[0] == "--make-solo-profile") { MakeSoloProfile(uint.Parse(e.Args[1]), e.Args[2]); Shutdown(); return; }
+        if (e.Args.Contains("--update-dryrun")) { _ = UpdateDryRun(); return; }
+        if (e.Args.Length >= 3 && e.Args[0] == "--apply-update" && int.TryParse(e.Args[2], out int oldPid))
+        {
+            Updater.ApplyUpdate(e.Args[1], oldPid);   // runs from the staged copy, then starts the updated app
+            Shutdown();
+            return;
+        }
 
         _single = new Mutex(true, @"Local\ScreenShift.SingleInstance", out bool first);
         if (!first)
@@ -58,10 +65,112 @@ public partial class App : Application
         RegisterHotkeys();
         UpdateTrayTip();
 
-        bool tray = e.Args.Contains("--tray") || (Settings.StartMinimized && Settings.Profiles.Count > 0);
+        bool tray = e.Args.Contains("--tray") || e.Args.Contains("--updated") || (Settings.StartMinimized && Settings.Profiles.Count > 0);
         if (!tray) ShowMain();
         else TrimMemorySoon();
-        Log.Write("Started");
+        Log.Write($"Started {Updater.Current}");
+
+        if (e.Args.Contains("--updated")) Osd.Show($"ScreenShift updated to {Updater.Current}", Osd.Check, seconds: 3);
+        if (e.Args.Contains("--update-failed")) Osd.Show("The update couldn't be installed, nothing was changed (see log)", Osd.Error, seconds: 5);
+        Task.Run(Updater.CleanupOldFiles);
+        StartUpdateTimer();
+    }
+
+    // ------------------------------------------------------------ updates
+
+    /// <summary>Diagnostic: check + download + verify the latest release without installing. Writes update-dryrun.txt.</summary>
+    async Task UpdateDryRun()
+    {
+        var sb = new System.Text.StringBuilder($"Current version: {Updater.Current}\n");
+        try
+        {
+            var u = await Updater.CheckAsync();
+            if (u == null) sb.AppendLine("Up to date (or no downloadable release).");
+            else
+            {
+                sb.AppendLine($"Found {u.Tag} ({u.Version}), asset {u.AssetSize} bytes, sha256 {(u.Sha256 ?? "not provided")}");
+                var stage = await Updater.DownloadAndStageAsync(u, null);
+                sb.AppendLine($"Downloaded, checksum and version verified. Staged files: {string.Join(", ", Directory.GetFiles(stage).Select(Path.GetFileName))}");
+                Directory.Delete(Path.GetDirectoryName(stage)!, true);
+            }
+            sb.AppendLine($"Install folder writable: {Updater.CanUpdateInPlace()}");
+        }
+        catch (Exception ex) { sb.AppendLine("FAILED: " + ex.Message); }
+        Directory.CreateDirectory(SettingsStore.Dir);
+        File.WriteAllText(Path.Combine(SettingsStore.Dir, "update-dryrun.txt"), sb.ToString());
+        Shutdown();
+    }
+
+    public UpdateInfo? AvailableUpdate { get; private set; }
+    public event Action? UpdateChanged;
+    DispatcherTimer? _updateTimer;
+    bool _checking;
+
+    void StartUpdateTimer()
+    {
+        // First look 1 minute after start, then hourly ticks that only call GitHub once every 24 h.
+        _updateTimer = new DispatcherTimer(TimeSpan.FromMinutes(1), DispatcherPriority.Background, async (_, _) =>
+        {
+            _updateTimer!.Interval = TimeSpan.FromHours(1);
+            if (!Settings.AutoCheckUpdates) return;
+            if (Settings.LastUpdateCheck is { } last && DateTime.Now - last < TimeSpan.FromHours(24) && AvailableUpdate == null) return;
+            await CheckForUpdates(manual: false);
+        }, Dispatcher);
+    }
+
+    /// <summary>Asks GitHub for a newer release. Returns an error message, or null on success.</summary>
+    public async Task<string?> CheckForUpdates(bool manual)
+    {
+        if (_checking) return null;
+        _checking = true;
+        try
+        {
+            AvailableUpdate = await Updater.CheckAsync();
+            Settings.LastUpdateCheck = DateTime.Now;
+            SaveSettings();
+            if (AvailableUpdate is { } u && !manual && Settings.NotifiedVersion != u.Version.ToString())
+            {
+                Settings.NotifiedVersion = u.Version.ToString();
+                SaveSettings();
+                Osd.Show($"ScreenShift {u.Version} is available. Open Settings to install it.", Osd.Display, seconds: 5);
+            }
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Log.Write("Update check failed: " + ex.Message);
+            return manual ? "Couldn't reach GitHub. Check your internet connection." : null;
+        }
+        finally
+        {
+            _checking = false;
+            UpdateChanged?.Invoke();
+            UpdateTrayTip();
+        }
+    }
+
+    /// <summary>Downloads, verifies and installs the available update, then restarts. Returns an error message on failure.</summary>
+    public async Task<string?> InstallUpdate(IProgress<double> progress)
+    {
+        if (AvailableUpdate is not { } u) return "No update available.";
+        if (!Updater.CanUpdateInPlace())
+        {
+            Updater.OpenInBrowser(u.PageUrl);
+            return "ScreenShift's folder is read-only, so the download page was opened instead.";
+        }
+        try
+        {
+            var stage = await Task.Run(() => Updater.DownloadAndStageAsync(u, progress));
+            SaveSettings();
+            Updater.LaunchApply(stage);
+            ExitApp();
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Log.Write("Update download failed: " + ex);
+            return "The update couldn't be downloaded: " + ex.Message;
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -124,6 +233,12 @@ public partial class App : Application
         _main.Show();
         if (_main.WindowState == WindowState.Minimized) _main.WindowState = WindowState.Normal;
         _main.Activate();
+    }
+
+    public void ShowSettingsPage()
+    {
+        ShowMain();
+        _main?.SelectPage(2);
     }
 
     void ToggleFlyout(POINT anchor)
@@ -222,7 +337,8 @@ public partial class App : Application
     void UpdateTrayTip()
     {
         var last = Settings.Profiles.FirstOrDefault(p => p.Id == Settings.LastProfileId);
-        Engine.SetTrayTip("ScreenShift" + (last != null ? $" - {last.Name}" : "") + (Settings.CursorBridge ? "" : " (cursor alignment off)"));
+        Engine.SetTrayTip("ScreenShift" + (last != null ? $" - {last.Name}" : "") + (Settings.CursorBridge ? "" : " (cursor alignment off)")
+            + (AvailableUpdate != null ? $"\nUpdate available: {AvailableUpdate.Version}" : ""));
     }
 
     // ------------------------------------------------------------ actions

@@ -27,6 +27,7 @@ public partial class MainWindow : Window
         TrayToggle.IsChecked = S.StartMinimized;
         ThemeBox.SelectedIndex = S.Theme switch { "Light" => 1, "Dark" => 2, _ => 0 };
         StartupToggle.IsChecked = App.StartWithWindows;
+        AutoUpdateToggle.IsChecked = S.AutoCheckUpdates;
         AboutText.Text = $"Version {typeof(App).Assembly.GetName().Version?.ToString(3)} · Settings and log: %APPDATA%\\ScreenShift";
 
         SetupKey(CycleKey, App.HkCycle, () => S.CycleHotkey, k => S.CycleHotkey = k);
@@ -37,9 +38,11 @@ public partial class MainWindow : Window
         // The window lives for the whole session (hidden when closed), so these subscriptions never leak.
         App.Current2.ProfilesChanged += OnProfilesChanged;
         App.Current2.DisplaysChanged += OnDisplaysChanged;
+        App.Current2.UpdateChanged += RefreshUpdateUI;
         Diagram.SizeChanged += (_, _) => DrawDiagram();
 
         RefreshAll();
+        RefreshUpdateUI();
         _loading = false;
     }
 
@@ -55,6 +58,7 @@ public partial class MainWindow : Window
         BridgeToggle.IsChecked = S.CursorBridge;
         StartupToggle.IsChecked = App.StartWithWindows;
         _loading = false;
+        RefreshUpdateUI();
         if (_dirty) { _dirty = false; RefreshAll(); }
         else RefreshCurrent();
     }
@@ -371,6 +375,7 @@ public partial class MainWindow : Window
         S.ConfirmAfterSwitch = ConfirmToggle.IsChecked == true;
         S.ConfirmSeconds = int.Parse((string)((ComboBoxItem)ConfirmSecs.SelectedItem).Tag);
         S.ShowOsd = OsdToggle.IsChecked == true;
+        S.AutoCheckUpdates = AutoUpdateToggle.IsChecked == true;
         S.StartMinimized = TrayToggle.IsChecked == true;
         var theme = (string)((ComboBoxItem)ThemeBox.SelectedItem).Tag;
         if (theme != S.Theme) { S.Theme = theme; App.Current2.ApplyTheme(); }
@@ -391,6 +396,68 @@ public partial class MainWindow : Window
     }
 
     void Exit_Click(object sender, RoutedEventArgs e) => App.Current2.ExitApp();
+
+    // ================================================================ updates
+
+    bool _updateBusy;
+
+    public void SelectPage(int index) => Nav.SelectedIndex = index;
+
+    void RefreshUpdateUI()
+    {
+        if (_updateBusy) return;
+        var u = App.Current2.AvailableUpdate;
+        var last = S.LastUpdateCheck is { } t ? $"Last checked {t:d MMM, HH:mm}." : "Not checked yet.";
+        if (u != null)
+        {
+            UpdateTitle.Text = $"Version {u.Version} is available";
+            UpdateText.Text = $"You have {Updater.Current}. Installing takes a few seconds: ScreenShift restarts by itself and keeps your profiles.";
+            UpdateBtn.Content = "Install update";
+            UpdateBtn.SetResourceReference(StyleProperty, "AccentButtonStyle");
+            UpdateIcon.SetResourceReference(TextBlock.ForegroundProperty, "AccentTextFillColorPrimaryBrush");
+            NotesBtn.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            UpdateTitle.Text = "ScreenShift is up to date";
+            UpdateText.Text = $"Version {Updater.Current}. {last}";
+            UpdateBtn.Content = "Check for updates";
+            UpdateBtn.ClearValue(StyleProperty);
+            UpdateIcon.ClearValue(TextBlock.ForegroundProperty);
+            NotesBtn.Visibility = Visibility.Collapsed;
+        }
+        UpdateBtn.IsEnabled = true;
+    }
+
+    async void Update_Click(object sender, RoutedEventArgs e)
+    {
+        if (_updateBusy) return;
+        _updateBusy = true;
+        UpdateBtn.IsEnabled = false;
+        string? error;
+        try
+        {
+            if (App.Current2.AvailableUpdate == null)
+            {
+                UpdateText.Text = "Checking GitHub…";
+                error = await App.Current2.CheckForUpdates(manual: true);
+            }
+            else
+            {
+                UpdateText.Text = "Downloading…";
+                var progress = new Progress<double>(f => UpdateText.Text = $"Downloading… {f:P0}");
+                error = await App.Current2.InstallUpdate(progress);
+            }
+        }
+        finally { _updateBusy = false; }
+        RefreshUpdateUI();
+        if (error != null) UpdateText.Text = error;
+    }
+
+    void Notes_Click(object sender, RoutedEventArgs e)
+    {
+        if (App.Current2.AvailableUpdate is { } u) Updater.OpenInBrowser(u.PageUrl);
+    }
 
     void Nav_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {

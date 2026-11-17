@@ -29,7 +29,12 @@ public partial class TrayFlyout : Window
         List.ItemsSource = items;
         Empty.Visibility = items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         Bridge.IsChecked = s.CursorBridge;
+        var u = App.Current2.AvailableUpdate;
+        UpdateRow.Visibility = u != null ? Visibility.Visible : Visibility.Collapsed;
+        if (u != null) UpdateRowText.Text = $"Update available: {u.Version}";
     }
+
+    void Update_Click(object sender, RoutedEventArgs e) { Hide(); App.Current2.ShowSettingsPage(); }
 
     public void ShowAt(POINT anchor)
     {

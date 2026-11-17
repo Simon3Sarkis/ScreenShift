@@ -212,6 +212,41 @@
                         </Grid>
                     </Border>
 
+                    <TextBlock Style="{StaticResource SectionHeader}" Text="Updates" />
+                    <Border Style="{StaticResource Card}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="UpdateIcon" Style="{StaticResource CardIcon}" Text="&#xE895;" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock x:Name="UpdateTitle" Style="{StaticResource CardTitle}" Text="ScreenShift is up to date" />
+                                <TextBlock x:Name="UpdateText" Style="{StaticResource CardDesc}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button x:Name="NotesBtn" Content="What's new" Height="32" Margin="0,0,8,0" Visibility="Collapsed" Click="Notes_Click" />
+                                <Button x:Name="UpdateBtn" Content="Check for updates" Height="32" MinWidth="150" Click="Update_Click" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                    <Border Style="{StaticResource Card}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource CardIcon}" Text="&#xE823;" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
+                                <TextBlock Style="{StaticResource CardTitle}" Text="Check for updates automatically" />
+                                <TextBlock Style="{StaticResource CardDesc}" Text="Once a day ScreenShift asks GitHub whether there's a new version. Nothing is installed until you click Install." />
+                            </StackPanel>
+                            <CheckBox x:Name="AutoUpdateToggle" Grid.Column="2" Style="{StaticResource ToggleSwitch}" Click="Setting_Changed" />
+                        </Grid>
+                    </Border>
+
                     <TextBlock Style="{StaticResource SectionHeader}" Text="App" />
                     <Border Style="{StaticResource Card}">
                         <Grid>
@@ -268,7 +303,7 @@
                                 <ColumnDefinition />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Style="{StaticResource CardIcon}" Text="&#xE946;" />
+                            <TextBlock Style="{StaticResource CardIcon}" Text="&#xE946;" x:Name="AboutIcon" />
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,16,0">
                                 <TextBlock Style="{StaticResource CardTitle}" Text="About ScreenShift" />
                                 <TextBlock x:Name="AboutText" Style="{StaticResource CardDesc}" />

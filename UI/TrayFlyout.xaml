@@ -39,6 +39,13 @@
                 <TextBlock x:Name="Empty" Text="No profiles yet. Open ScreenShift to save your current layout."
                            Margin="12,4,12,8" TextWrapping="Wrap" FontSize="12" Visibility="Collapsed"
                            Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                <Button x:Name="UpdateRow" Style="{StaticResource FlyoutRow}" Visibility="Collapsed" Click="Update_Click" Margin="0,4,0,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE896;" FontFamily="{StaticResource IconFont}" Width="22" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                        <TextBlock x:Name="UpdateRowText" VerticalAlignment="Center" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                    </StackPanel>
+                </Button>
             </StackPanel>
 
             <Border BorderThickness="0,1,0,0" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" Padding="20,12">

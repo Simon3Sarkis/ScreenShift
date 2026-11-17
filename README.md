@@ -82,6 +82,18 @@ Click the tray icon for a Windows 11-style flyout: switch profiles, toggle curso
 
 ![Settings](docs/settings.png)
 
+## Updates built in
+
+ScreenShift checks this repo's [Releases](../../releases) once a day. When there's a new version you get a notice on screen,
+in the tray flyout and in **Settings > Updates**. Click **Install update** and it:
+
+1. downloads the release zip from GitHub,
+2. verifies it against GitHub's SHA-256 checksum and checks that the exe is the expected version,
+3. closes, swaps in the new files and starts again. Your profiles and settings are kept.
+
+Nothing is installed until you click. If anything goes wrong mid-update, the old files are restored and the old version
+restarts. You can turn the daily check off and use **Check for updates** whenever you like.
+
 ---
 
 ## Install
@@ -91,7 +103,7 @@ Click the tray icon for a Windows 11-style flyout: switch profiles, toggle curso
 3. Optional: in ScreenShift > Settings, turn on **Start with Windows**.
 
 Notes:
-- Runs as a normal user. No admin rights, no installer, no network access.
+- Runs as a normal user. No admin rights, no installer. The only network access is the update check (see below), which you can turn off.
 - The exe isn't code-signed, so Windows SmartScreen may show "Windows protected your PC" the first time.
   Choose **More info > Run anyway**.
 - Windows 11 hides new tray icons behind the **^** arrow. To pin it: Settings > Personalization > Taskbar >
@@ -148,6 +160,7 @@ The UI is WPF with the built-in Windows 11 (Fluent) theme. There are no NuGet de
 |---|---|
 | `--tray` | Start hidden in the tray. |
 | `--selftest` | Checks the cursor-mapping maths and lists every connected display, including ones that are off. Writes `%APPDATA%\ScreenShift\selftest.txt`. |
+| `--update-dryrun` | Checks GitHub for a newer release, downloads and verifies it, but doesn't install. Writes `%APPDATA%\ScreenShift\update-dryrun.txt`. |
 | `--make-solo-profile <targetId> "<name>"` | Creates a profile with only that display on (target IDs come from `--selftest`), then switches back. Your screens blank briefly. Close the running ScreenShift first. |
 
 ## Limitations

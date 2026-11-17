@@ -90,6 +90,10 @@ public sealed class AppSettings
     public bool StartMinimized { get; set; } = true;
     public string Theme { get; set; } = "System";
     public string? LastProfileId { get; set; }
+
+    public bool AutoCheckUpdates { get; set; } = true;
+    public DateTime? LastUpdateCheck { get; set; }
+    public string? NotifiedVersion { get; set; }
 }
 
 [JsonSourceGenerationOptions(WriteIndented = true, UseStringEnumConverter = true)]
