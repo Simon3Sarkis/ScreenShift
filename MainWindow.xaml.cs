@@ -162,7 +162,8 @@ public partial class MainWindow : Window
         grid.Children.Add(apply);
 
         var more = new Button { Content = "", Style = (Style)FindResource("IconButton"), ToolTip = "More options" };
-        more.Click += (_, _) => { var m = BuildMenu(p, index, title, text); m.PlacementTarget = more; m.IsOpen = true; };
+        System.Windows.Automation.AutomationProperties.SetName(more, "More options");
+        more.Click +=(_, _) => { var m = BuildMenu(p, index, title, text); m.PlacementTarget = more; m.IsOpen = true; };
         Grid.SetColumn(more, 4);
         grid.Children.Add(more);
 
@@ -171,7 +172,9 @@ public partial class MainWindow : Window
 
     ContextMenu BuildMenu(Profile p, int index, TextBlock title, StackPanel host)
     {
-        var menu = new ContextMenu();
+        // The "⋯" button draws its dots with the icon font, and a ContextMenu inherits fonts from the
+        // button it opens from. Without this, every letter in the menu rendered as an icon (gibberish).
+        var menu = new ContextMenu { FontFamily = FontFamily, FontSize = 14 };
         MenuItem Item(string header, string glyph, Action a, bool enabled = true)
         {
             var mi = new MenuItem { Header = header, IsEnabled = enabled, Icon = new TextBlock { Text = glyph, FontFamily = (FontFamily)FindResource("IconFont") } };
