@@ -117,6 +117,24 @@ public static unsafe class Win32
     [DllImport("dwmapi.dll")] public static extern int DwmSetWindowAttribute(nint hwnd, int attr, ref int value, int size);
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] public static extern nint GetModuleHandleW(string? name);
+    // ---- black-out overlay / idle detection
+    public const uint WS_POPUP = 0x80000000, WS_EX_LAYERED = 0x80000;
+    public const uint WM_SETCURSOR = 0x0020, WM_MOUSEACTIVATE = 0x0021, WM_LBUTTONDOWN = 0x0201, WM_RBUTTONDOWN = 0x0204, WM_MBUTTONDOWN = 0x0207;
+    public const uint SWP_NOMOVE = 0x2, SWP_SHOWWINDOW = 0x40;
+    [StructLayout(LayoutKind.Sequential)] public struct LASTINPUTINFO { public uint cbSize, dwTime; }
+    [StructLayout(LayoutKind.Sequential)] public struct XINPUT_STATE { public uint dwPacketNumber; public ushort wButtons; public byte bLeftTrigger, bRightTrigger; public short sThumbLX, sThumbLY, sThumbRX, sThumbRY; }
+    [DllImport("user32.dll")] public static extern bool GetLastInputInfo(ref LASTINPUTINFO info);
+    [DllImport("user32.dll")] public static extern bool ShowWindow(nint hwnd, int cmd);
+    [DllImport("user32.dll")] public static extern bool SetLayeredWindowAttributes(nint hwnd, uint key, byte alpha, uint flags);
+    [DllImport("user32.dll")] public static extern nint SetCursor(nint cursor);
+    [DllImport("gdi32.dll")] public static extern nint GetStockObject(int obj);
+    [DllImport("shell32.dll")] public static extern int SHQueryUserNotificationState(out int state);
+    [DllImport("xinput1_4.dll")] public static extern uint XInputGetState(uint index, out XINPUT_STATE state);
+
+    // ---- taskbar
+    [StructLayout(LayoutKind.Sequential)] public struct APPBARDATA { public uint cbSize; public nint hWnd; public uint uCallbackMessage, uEdge; public RECT rc; public nint lParam; }
+    [DllImport("shell32.dll")] public static extern nuint SHAppBarMessage(uint msg, ref APPBARDATA data);
+
     [DllImport("kernel32.dll")] public static extern nint GetCurrentProcess();
     [DllImport("kernel32.dll")] public static extern bool SetProcessWorkingSetSize(nint proc, nint min, nint max);
 

@@ -91,6 +91,15 @@ public sealed class AppSettings
     public string Theme { get; set; } = "System";
     public string? LastProfileId { get; set; }
 
+    // OLED care
+    public bool IdleBlackout { get; set; }
+    public int IdleBlackoutMinutes { get; set; } = 5;
+    public List<string> BlackoutMonitors { get; set; } = [];   // monitor device paths; empty = all screens
+    public bool BlackoutSkipWhenBusy { get; set; } = true;
+    public Hotkey? BlackoutHotkey { get; set; }
+    public Hotkey? IdleBlackoutToggleHotkey { get; set; }
+    public Hotkey? TaskbarToggleHotkey { get; set; }
+
     public bool AutoCheckUpdates { get; set; } = true;
     public DateTime? LastUpdateCheck { get; set; }
     public string? NotifiedVersion { get; set; }
@@ -118,7 +127,7 @@ public static class SettingsStore
                 var json = bytes.AsSpan();
                 if (json.StartsWith(new byte[] { 0xEF, 0xBB, 0xBF })) json = json[3..];   // tolerate Notepad's UTF-8 BOM
                 var s = JsonSerializer.Deserialize(json, SettingsJson.Default.AppSettings);
-                if (s != null) { s.Profiles ??= []; return s; }
+                if (s != null) { s.Profiles ??= []; s.BlackoutMonitors ??= []; return s; }
             }
             catch (Exception ex) { Log.Write($"Settings load failed ({Path.GetFileName(p)}): {ex.Message}"); }
         }

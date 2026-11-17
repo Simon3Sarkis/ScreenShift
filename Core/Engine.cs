@@ -13,7 +13,8 @@ public static unsafe class Engine
 {
     public const string WindowClass = "ScreenShift.Engine.v1";
     public const uint MsgShowMain = WM_APP + 5;
-    const uint MsgSetHotkeys = WM_APP + 1, MsgBridge = WM_APP + 2, MsgRefresh = WM_APP + 3, MsgTray = WM_APP + 10, MsgTrayTip = WM_APP + 11;
+    const uint MsgSetHotkeys = WM_APP + 1, MsgBridge = WM_APP + 2, MsgRefresh = WM_APP + 3, MsgTray = WM_APP + 10, MsgTrayTip = WM_APP + 11,
+        MsgBlackoutConfig = WM_APP + 12, MsgBlackoutToggle = WM_APP + 13;
     const nuint TimerWatchdog = 1, TimerRefresh = 2;
 
     static Thread? _thread;
@@ -63,6 +64,16 @@ public static unsafe class Engine
         if (_hwnd != 0) SendMessageW(_hwnd, MsgBridge, enabled ? 1 : 0, 0);
     }
 
+    /// <summary>Applies OLED black-out settings (thread-safe).</summary>
+    public static void ConfigureBlackout(bool idleEnabled, int minutes, IEnumerable<string> monitors, bool skipWhenBusy)
+    {
+        Blackout.Configure(idleEnabled, minutes, monitors, skipWhenBusy);
+        if (_hwnd != 0) PostMessageW(_hwnd, MsgBlackoutConfig, 0, 0);
+    }
+
+    /// <summary>Blacks out the chosen screens now, or wakes them if they already are.</summary>
+    public static void ToggleBlackout() { if (_hwnd != 0) PostMessageW(_hwnd, MsgBlackoutToggle, 0, 0); }
+
     public static void RefreshLayout() { if (_hwnd != 0) PostMessageW(_hwnd, MsgRefresh, 0, 0); }
 
     public static void SetTrayTip(string tip)
@@ -85,6 +96,7 @@ public static unsafe class Engine
             _hwnd = CreateWindowExW(WS_EX_TOOLWINDOW, WindowClass, "ScreenShift", 0, 0, 0, 0, 0, 0, 0, inst, 0);
             _taskbarCreated = RegisterWindowMessageW("TaskbarCreated");
             _monitorCount = CursorBridge.UpdateLayout();
+            Blackout.Init(_hwnd);
             AddTray();
         }
         catch (Exception ex) { Log.Write("Engine start failed: " + ex); }
@@ -117,7 +129,7 @@ public static unsafe class Engine
             case WM_DISPLAYCHANGE:
             case WM_SETTINGCHANGE:
             case MsgRefresh:
-                if (msg == WM_DISPLAYCHANGE) { CursorBridge.Suspended = true; _lastDisplayChange = Environment.TickCount64; }   // layout is in flux; resume after the debounce
+                if (msg == WM_DISPLAYCHANGE) { Blackout.Hide("display change"); CursorBridge.Suspended = true; _lastDisplayChange = Environment.TickCount64; }   // layout is in flux; resume after the debounce
                 SetTimer(hwnd, TimerRefresh, 400, 0);          // debounce bursts of change messages
                 return msg == MsgRefresh;
 
@@ -127,6 +139,18 @@ public static unsafe class Engine
                 CursorBridge.Suspended = false;
                 UpdateHookState();
                 DisplaysChanged?.Invoke();
+                return true;
+
+            case WM_TIMER when w == (nint)Blackout.TimerIdle || w == (nint)Blackout.TimerActive:
+                Blackout.OnTimer((nuint)w);
+                return true;
+
+            case MsgBlackoutConfig:
+                Blackout.ApplyConfig();
+                return true;
+
+            case MsgBlackoutToggle:
+                Blackout.Toggle();
                 return true;
 
             case WM_TIMER when w == (nint)TimerWatchdog:
@@ -174,6 +198,8 @@ public static unsafe class Engine
                 foreach (var id in _registered) UnregisterHotKey(hwnd, id);
                 _registered.Clear();
                 KillTimer(hwnd, TimerWatchdog);
+                KillTimer(hwnd, Blackout.TimerIdle);
+                Blackout.Hide("exit");
                 CursorBridge.Uninstall();
                 RemoveTray();
                 DestroyWindow(hwnd);

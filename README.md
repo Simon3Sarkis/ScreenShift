@@ -7,7 +7,7 @@
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
 ScreenShift is a small Windows 11 tray app that saves your display layouts as profiles, switches between them with hotkeys,
-and protects you from the "black screen after switching" problem. Its headline feature is **DPI-aware cursor alignment**.
+and protects you from the "black screen after switching" problem. It also helps prevent OLED burn-in. Its headline feature is **DPI-aware cursor alignment**.
 
 ![Cursor alignment: Windows on its own vs ScreenShift](docs/cursor-alignment-diagram.svg)
 
@@ -74,9 +74,26 @@ The reason this app exists: other switchers sometimes left an OLED black or cras
 - **"Keep these display settings?"** prompt with a countdown. If you see nothing, do nothing: it reverts by itself.
 - **Emergency hotkey** (default `Ctrl + Alt + Shift + Home`) turns on every connected display.
 
+## OLED care
+
+![OLED care](docs/oled-care.png)
+
+**Black out when idle.** After a timeout you choose (1 minute to 1 hour), ScreenShift covers the screens you pick with
+pure black, so OLED pixels are fully off. Move the mouse or press a key and they're back instantly. It doesn't turn the
+monitor off or change the display mode, so the screen keeps its signal: no re-sync, no HDR flicker, no black-screen risk.
+
+- **Pick the screens:** black out only your OLED and leave the other screens alone. Screens are recognised by hardware ID, so the choice survives profile switches.
+- **Waits while you're watching or playing:** skips fullscreen games and videos and anything playing sound. Game controller input counts as activity, so it won't black out mid-game.
+- **Shortcuts:** one to black out right now (press it again or move the mouse to wake), one to turn the idle timer on or off.
+- **Never steals focus:** the black layer can't be activated, so the app you were using stays in front.
+
+**Taskbar auto-hide on a shortcut.** A taskbar that's always on screen is the classic OLED burn-in. Flip Windows' own
+"Automatically hide the taskbar" setting from the OLED care page, the tray flyout or a hotkey.
+
 ## Lives in the tray
 
-Click the tray icon for a Windows 11-style flyout: switch profiles, toggle cursor alignment, or open settings.
+Click the tray icon for a Windows 11-style flyout: switch profiles, toggle cursor alignment, black out the screens,
+show or hide the taskbar, or open settings.
 
 <img src="docs/tray-flyout.png" alt="Tray flyout" width="360">
 

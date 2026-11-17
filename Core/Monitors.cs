@@ -40,6 +40,24 @@ public static unsafe class Monitors
         return Enumerate().FirstOrDefault(m => m.Handle == h);
     }
 
+    /// <summary>Active monitors keyed by GDI name: (stable device path, friendly name).</summary>
+    public static Dictionary<string, (string DevicePath, string Name)> Identify()
+    {
+        var map = new Dictionary<string, (string, string)>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            var (paths, _) = DisplayConfigApi.Query(DisplayConfigApi.QDC_ONLY_ACTIVE_PATHS);
+            foreach (var p in paths)
+            {
+                var gdi = DisplayConfigApi.GetSourceGdiName(p.sourceInfo.adapterId, p.sourceInfo.id);
+                var (name, dev) = DisplayConfigApi.GetTargetName(p.targetInfo.adapterId, p.targetInfo.id);
+                if (gdi.Length > 0 && dev.Length > 0) map.TryAdd(gdi, (dev, name.Length > 0 ? name : gdi.Replace(@"\\.\", "")));
+            }
+        }
+        catch (Exception ex) { Log.Write("Monitor lookup failed: " + ex.Message); }
+        return map;
+    }
+
     static Dictionary<string, string> GdiToFriendly()
     {
         var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);

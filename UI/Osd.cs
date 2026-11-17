@@ -12,6 +12,7 @@ namespace ScreenShift.UI;
 public static class Osd
 {
     public const string Display = "", Check = "", Error = "", Mouse = "", Undo = "";
+    public const string Moon = "", Taskbar = "";
 
     static Window? _win;
     static TextBlock? _icon, _text;

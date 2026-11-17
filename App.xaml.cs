@@ -10,7 +10,7 @@ namespace ScreenShift;
 
 public partial class App : Application
 {
-    public const int HkCycle = 1, HkBridge = 2, HkEmergency = 3, HkProfileBase = 100;
+    public const int HkCycle = 1, HkBridge = 2, HkEmergency = 3, HkBlackout = 4, HkIdleBlackout = 5, HkTaskbar = 6, HkProfileBase = 100;
 
     public static AppSettings Settings { get; private set; } = new();
     public static App Current2 => (App)Current;
@@ -62,6 +62,7 @@ public partial class App : Application
         Engine.ShowMainRequested += () => Dispatcher.BeginInvoke(ShowMain);
         Engine.Start();
         Engine.SetBridge(Settings.CursorBridge, Settings.BridgeMode);
+        ApplyBlackoutSettings();
         RegisterHotkeys();
         UpdateTrayTip();
 
@@ -238,7 +239,7 @@ public partial class App : Application
     public void ShowSettingsPage()
     {
         ShowMain();
-        _main?.SelectPage(2);
+        _main?.SelectPage(3);
     }
 
     void ToggleFlyout(POINT anchor)
@@ -311,6 +312,9 @@ public partial class App : Application
         if (Settings.CycleHotkey != null) list.Add((HkCycle, Settings.CycleHotkey));
         if (Settings.BridgeToggleHotkey != null) list.Add((HkBridge, Settings.BridgeToggleHotkey));
         if (Settings.EmergencyHotkey != null) list.Add((HkEmergency, Settings.EmergencyHotkey));
+        if (Settings.BlackoutHotkey != null) list.Add((HkBlackout, Settings.BlackoutHotkey));
+        if (Settings.IdleBlackoutToggleHotkey != null) list.Add((HkIdleBlackout, Settings.IdleBlackoutToggleHotkey));
+        if (Settings.TaskbarToggleHotkey != null) list.Add((HkTaskbar, Settings.TaskbarToggleHotkey));
         for (int i = 0; i < Settings.Profiles.Count; i++)
             if (Settings.Profiles[i].Hotkey is { } hk) list.Add((HkProfileBase + i, hk));
         Engine.SetHotkeys(list);
@@ -350,6 +354,9 @@ public partial class App : Application
             case HkCycle: CycleProfile(); break;
             case HkBridge: SetBridge(!Settings.CursorBridge); break;
             case HkEmergency: Emergency(); break;
+            case HkBlackout: Engine.ToggleBlackout(); break;
+            case HkIdleBlackout: SetIdleBlackout(!Settings.IdleBlackout); break;
+            case HkTaskbar: SetTaskbarAutoHide(!Taskbar.AutoHide); break;
             default:
                 int i = id - HkProfileBase;
                 if (i >= 0 && i < Settings.Profiles.Count) _ = ApplyProfile(Settings.Profiles[i]);
@@ -367,6 +374,31 @@ public partial class App : Application
         SaveSettings();
         Osd.Show(on ? "Cursor alignment on" : "Cursor alignment off", Osd.Mouse);
         DisplaysChanged?.Invoke();
+    }
+
+    // ------------------------------------------------------------ OLED care
+
+    public event Action? OledChanged;
+
+    public void ApplyBlackoutSettings() =>
+        Engine.ConfigureBlackout(Settings.IdleBlackout, Settings.IdleBlackoutMinutes, Settings.BlackoutMonitors, Settings.BlackoutSkipWhenBusy);
+
+    public void SetIdleBlackout(bool on)
+    {
+        Settings.IdleBlackout = on;
+        ApplyBlackoutSettings();
+        SaveSettings();
+        Osd.Show(on ? $"Black out after {Settings.IdleBlackoutMinutes} min idle: on" : "Idle black-out off", Osd.Moon);
+        OledChanged?.Invoke();
+    }
+
+    public void SetTaskbarAutoHide(bool hide)
+    {
+        try { Taskbar.AutoHide = hide; }
+        catch (Exception ex) { Log.Write("Taskbar toggle failed: " + ex.Message); }
+        bool now = Taskbar.AutoHide;
+        Osd.Show(now ? "Taskbar hides automatically" : "Taskbar always shown", Osd.Taskbar);
+        OledChanged?.Invoke();
     }
 
     void CycleProfile()

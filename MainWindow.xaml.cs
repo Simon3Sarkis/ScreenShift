@@ -33,12 +33,17 @@ public partial class MainWindow : Window
         SetupKey(CycleKey, App.HkCycle, () => S.CycleHotkey, k => S.CycleHotkey = k);
         SetupKey(EmergencyKey, App.HkEmergency, () => S.EmergencyHotkey, k => S.EmergencyHotkey = k);
         SetupKey(BridgeKey, App.HkBridge, () => S.BridgeToggleHotkey, k => S.BridgeToggleHotkey = k);
+        SetupKey(BlackoutKey, App.HkBlackout, () => S.BlackoutHotkey, k => S.BlackoutHotkey = k);
+        SetupKey(IdleKey, App.HkIdleBlackout, () => S.IdleBlackoutToggleHotkey, k => S.IdleBlackoutToggleHotkey = k);
+        SetupKey(TaskbarKey, App.HkTaskbar, () => S.TaskbarToggleHotkey, k => S.TaskbarToggleHotkey = k);
+        LoadOled();
         UpdateModeDesc();
 
         // The window lives for the whole session (hidden when closed), so these subscriptions never leak.
         App.Current2.ProfilesChanged += OnProfilesChanged;
         App.Current2.DisplaysChanged += OnDisplaysChanged;
         App.Current2.UpdateChanged += RefreshUpdateUI;
+        App.Current2.OledChanged += () => { _loading = true; LoadOled(); _loading = false; };
         Diagram.SizeChanged += (_, _) => DrawDiagram();
 
         RefreshAll();
@@ -57,6 +62,7 @@ public partial class MainWindow : Window
         _loading = true;
         BridgeToggle.IsChecked = S.CursorBridge;
         StartupToggle.IsChecked = App.StartWithWindows;
+        LoadOled();
         _loading = false;
         RefreshUpdateUI();
         if (_dirty) { _dirty = false; RefreshAll(); }
@@ -288,6 +294,9 @@ public partial class MainWindow : Window
         if (exceptId != App.HkCycle && hk.SameAs(S.CycleHotkey)) return "cycling profiles";
         if (exceptId != App.HkEmergency && hk.SameAs(S.EmergencyHotkey)) return "the emergency action";
         if (exceptId != App.HkBridge && hk.SameAs(S.BridgeToggleHotkey)) return "cursor alignment";
+        if (exceptId != App.HkBlackout && hk.SameAs(S.BlackoutHotkey)) return "black out now";
+        if (exceptId != App.HkIdleBlackout && hk.SameAs(S.IdleBlackoutToggleHotkey)) return "idle black-out";
+        if (exceptId != App.HkTaskbar && hk.SameAs(S.TaskbarToggleHotkey)) return "the taskbar";
         for (int i = 0; i < S.Profiles.Count; i++)
             if (exceptId != App.HkProfileBase + i && hk.SameAs(S.Profiles[i].Hotkey)) return $"\"{S.Profiles[i].Name}\"";
         return null;
@@ -366,6 +375,76 @@ public partial class MainWindow : Window
         t.SetResourceReference(TextBlock.ForegroundProperty, secondary ? "TextFillColorSecondaryBrush" : "TextFillColorPrimaryBrush");
         return t;
     }
+
+    // ================================================================ OLED care page
+
+    void LoadOled()
+    {
+        IdleToggle.IsChecked = S.IdleBlackout;
+        BusyToggle.IsChecked = S.BlackoutSkipWhenBusy;
+        int idx = IdleMinutes.Items.Cast<ComboBoxItem>().ToList().FindIndex(i => int.Parse((string)i.Tag) >= S.IdleBlackoutMinutes);
+        IdleMinutes.SelectedIndex = idx < 0 ? IdleMinutes.Items.Count - 1 : idx;
+        try { TaskbarToggle.IsChecked = Core.Taskbar.AutoHide; } catch { }
+        BuildScreenChecks();
+    }
+
+    void BuildScreenChecks()
+    {
+        ScreenChecks.Children.Clear();
+        var screens = new List<(string Path, string Label)>();
+        try
+        {
+            var ids = Monitors.Identify();
+            foreach (var m in Monitors.Enumerate())
+                if (ids.TryGetValue(m.GdiName, out var id) && !screens.Any(x => x.Path.Equals(id.DevicePath, StringComparison.OrdinalIgnoreCase)))
+                    screens.Add((id.DevicePath, id.Name));
+        }
+        catch (Exception ex) { Log.Write("Screen list failed: " + ex.Message); }
+        // Chosen screens that are currently off still show up, so switching profiles doesn't lose the choice.
+        foreach (var path in S.BlackoutMonitors)
+            if (!screens.Any(x => x.Path.Equals(path, StringComparison.OrdinalIgnoreCase)))
+            {
+                var name = S.Profiles.SelectMany(p => p.Monitors).FirstOrDefault(m => m.DevicePath.Equals(path, StringComparison.OrdinalIgnoreCase))?.Name ?? "Screen";
+                screens.Add((path, name + " (off right now)"));
+            }
+        foreach (var (path, label) in screens)
+        {
+            var cb = new CheckBox
+            {
+                Content = label, Margin = new Thickness(0, 0, 24, 0), Tag = path,
+                IsChecked = S.BlackoutMonitors.Contains(path, StringComparer.OrdinalIgnoreCase),
+            };
+            cb.Click += (_, _) =>
+            {
+                S.BlackoutMonitors = ScreenChecks.Children.OfType<CheckBox>().Where(c => c.IsChecked == true).Select(c => (string)c.Tag).ToList();
+                UpdateScreensDesc();
+                App.Current2.ApplyBlackoutSettings();
+                App.Current2.SaveSettings();
+            };
+            ScreenChecks.Children.Add(cb);
+        }
+        UpdateScreensDesc();
+    }
+
+    void UpdateScreensDesc() => ScreensDesc.Text = S.BlackoutMonitors.Count == 0
+        ? "None ticked, so every screen is blacked out. Tick your OLED to protect only that one."
+        : "Only the ticked screens are blacked out. Screens are recognised by their hardware ID, so this survives profile switches.";
+
+    void Oled_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_loading || IdleMinutes.SelectedItem is not ComboBoxItem item) return;
+        bool wasOn = S.IdleBlackout;
+        S.IdleBlackout = IdleToggle.IsChecked == true;
+        S.IdleBlackoutMinutes = int.Parse((string)item.Tag);
+        S.BlackoutSkipWhenBusy = BusyToggle.IsChecked == true;
+        App.Current2.ApplyBlackoutSettings();
+        App.Current2.SaveSettings();
+        if (S.IdleBlackout != wasOn) Log.Write($"Idle black-out {(S.IdleBlackout ? "on" : "off")} ({S.IdleBlackoutMinutes} min)");
+    }
+
+    void TryBlackout_Click(object sender, RoutedEventArgs e) => Core.Engine.ToggleBlackout();
+
+    void TaskbarToggle_Click(object sender, RoutedEventArgs e) => App.Current2.SetTaskbarAutoHide(TaskbarToggle.IsChecked == true);
 
     // ================================================================ settings page
 
@@ -464,7 +543,9 @@ public partial class MainWindow : Window
         if (PageProfiles == null) return;
         PageProfiles.Visibility = Nav.SelectedIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
         PageCursor.Visibility = Nav.SelectedIndex == 1 ? Visibility.Visible : Visibility.Collapsed;
-        PageSettings.Visibility = Nav.SelectedIndex == 2 ? Visibility.Visible : Visibility.Collapsed;
+        PageOled.Visibility = Nav.SelectedIndex == 2 ? Visibility.Visible : Visibility.Collapsed;
+        PageSettings.Visibility = Nav.SelectedIndex == 3 ? Visibility.Visible : Visibility.Collapsed;
+        if (Nav.SelectedIndex == 2) { _loading = true; LoadOled(); _loading = false; }
         if (Nav.SelectedIndex == 1) Dispatcher.BeginInvoke(DrawDiagram, System.Windows.Threading.DispatcherPriority.Loaded);
     }
 }

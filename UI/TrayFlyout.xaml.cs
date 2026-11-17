@@ -63,6 +63,8 @@ public partial class TrayFlyout : Window
     }
 
     void Bridge_Click(object sender, RoutedEventArgs e) => App.Current2.SetBridge(Bridge.IsChecked == true);
+    void Blackout_Click(object sender, RoutedEventArgs e) { Hide(); Engine.ToggleBlackout(); }
+    void Taskbar_Click(object sender, RoutedEventArgs e) { Hide(); App.Current2.SetTaskbarAutoHide(!Taskbar.AutoHide); }
     void Emergency_Click(object sender, RoutedEventArgs e) { Hide(); App.Current2.Emergency(); }
     void Settings_Click(object sender, RoutedEventArgs e) { Hide(); App.Current2.ShowMain(); }
     void Exit_Click(object sender, RoutedEventArgs e) { Hide(); App.Current2.ExitApp(); }

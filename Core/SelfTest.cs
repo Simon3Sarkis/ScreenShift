@@ -59,6 +59,8 @@ public static class SelfTest
         }
         catch (Exception ex) { sb.AppendLine("  error: " + ex); fails++; }
 
+        int q = Native.Win32.SHQueryUserNotificationState(out int qs) == 0 ? qs : -1;
+        sb.AppendLine($"Sound peak now: {AudioMeter.Peak():0.0000}, fullscreen state (QUNS): {q}, taskbar auto-hide: {Taskbar.AutoHide}");
         sb.AppendLine(fails == 0 ? "ALL PASSED" : $"{fails} FAILED");
         Directory.CreateDirectory(SettingsStore.Dir);
         File.WriteAllText(Path.Combine(SettingsStore.Dir, "selftest.txt"), sb.ToString());

@@ -63,8 +63,14 @@
             <Border Background="{DynamicResource SolidBackgroundFillColorTertiaryBrush}" Padding="8"
                     BorderThickness="0,1,0,0" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}">
                 <Grid>
-                    <Button Style="{StaticResource IconButton}" HorizontalAlignment="Left" Content="&#xE7BA;"
-                            ToolTip="Restore all displays (emergency)" Click="Emergency_Click" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                        <Button Style="{StaticResource IconButton}" Content="&#xE7BA;"
+                                ToolTip="Restore all displays (emergency)" Click="Emergency_Click" />
+                        <Button Style="{StaticResource IconButton}" Content="&#xE708;"
+                                ToolTip="Black out screens now" Click="Blackout_Click" />
+                        <Button Style="{StaticResource IconButton}" Content="&#xE7C4;"
+                                ToolTip="Show or hide the taskbar" Click="Taskbar_Click" />
+                    </StackPanel>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Style="{StaticResource IconButton}" Content="&#xE713;" ToolTip="Open ScreenShift" Click="Settings_Click" />
                         <Button Style="{StaticResource IconButton}" Content="&#xE7E8;" ToolTip="Exit ScreenShift" Click="Exit_Click" />
